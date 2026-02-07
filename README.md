@@ -1,61 +1,68 @@
-# NYC Congestion Pricing Analysis Pipeline
+# NYC Congestion Pricing Audit
 
-This project analyzes the impact of NYC's Manhattan Congestion Relief Zone Toll implemented in January 2025.
+Analysis of the Manhattan Congestion Relief Zone Toll impact on NYC taxi industry throughout 2025.
 
-## Setup
+## Quick Start
 
-1. Install dependencies:
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Run Full Pipeline
+### 2. Download Data
 ```bash
-python pipeline.py --all
+python download_required_data.py
 ```
 
-### Run Individual Steps
+This downloads:
+- Q1 2024 (Jan-Mar) for comparison
+- December 2024 for baseline
+- All of 2025 for main analysis
+
+### 3. Process Data
 ```bash
-# Scrape data
-python pipeline.py --scrape
-
-# Process data (requires scraped data)
-python pipeline.py --process
-
-# Run analysis (requires processed data)
-python pipeline.py --analyze
-
-# Generate reports (requires analysis)
-python pipeline.py --report
+python pipeline.py --process --year 2024 --skip-scrape
+python pipeline.py --process --year 2025 --skip-scrape
 ```
 
-### Run Dashboard
+### 4. View Dashboard
 ```bash
 streamlit run dashboard.py
 ```
 
-## Project Structure
+Open http://localhost:8501 in your browser.
 
-- `pipeline.py` - Main orchestration script
-- `data_utils.py` - Data scraping, ETL, geo mapping, leakage audit, traffic analysis, weather
-- `analysis.py` - Visualization and analysis functions
-- `dashboard.py` - Streamlit dashboard (4 tabs)
-- `report_gen.py` - PDF report and content generation
+## Dashboard Tabs
 
-## Outputs
+- **The Map**: Border effect showing % change in drop-offs (2024 vs 2025)
+- **The Flow**: Traffic velocity heatmaps (Q1 2024 vs Q1 2025)
+- **The Economics**: Tip percentage vs surcharge trends (2025)
+- **The Weather**: Rain elasticity analysis (2025)
 
-- `outputs/audit_report.pdf` - Executive summary PDF
-- `outputs/blog_post.md` - Medium blog post
-- `outputs/linkedin_post.md` - LinkedIn post content
-- `data/processed/` - Processed parquet files
-- `data/audit_logs/` - Ghost trip audit logs
+## Generate Reports
 
-## Notes
+```bash
+python pipeline.py --analyze --report
+```
 
-- Data is downloaded to `data/raw/` during scraping
-- December 2025 data is automatically imputed if missing
-- All processing uses Polars for Big Data handling
-- Dashboard requires processed data to be generated first
+Outputs:
+- `outputs/audit_report.pdf`
+- `outputs/blog_post.md`
+- `outputs/linkedin_post.md`
 
+## Project Files
+
+- `pipeline.py` - Main processing pipeline
+- `data_utils.py` - Data download, cleaning, and filtering
+- `analysis.py` - Visualization functions
+- `dashboard.py` - Streamlit dashboard
+- `report_gen.py` - Report generation
+- `download_required_data.py` - Data download script
+
+## Data
+
+Processed data saved to:
+- `data/processed/processed_2024.parquet`
+- `data/processed/processed_2025.parquet`
+
+Ghost trip audit logs: `data/audit_logs/`

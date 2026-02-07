@@ -23,6 +23,7 @@ plt.rcParams['figure.figsize'] = (12, 6)
 def calc_border_effect(year_2024=2024, year_2025=2025):
     """
     Calculate % change in drop-offs for zones bordering 60th St
+    Compares full year 2024 vs full year 2025
     Returns data ready for choropleth mapping
     """
     logger.info("Calculating border effect...")
@@ -41,10 +42,10 @@ def calc_border_effect(year_2024=2024, year_2025=2025):
         
         df = pl.scan_parquet(str(data_path))
         
-        # filter dropoffs in border zones
+        # filter dropoffs in border zones - use full year data
         border_dropoffs = df.filter(pl.col('dropoff_loc').is_in(border_zones))
         
-        # count by zone
+        # count by zone - aggregate first in Polars
         zone_counts = border_dropoffs.group_by('dropoff_loc').agg([
             pl.count().alias('dropoff_count')
         ]).collect()
@@ -64,10 +65,20 @@ def calc_border_effect(year_2024=2024, year_2025=2025):
             suffix='_2025'
         ).fill_null(0)
         
-        # calculate % change
+        # calculate % change - handle division by zero and cap extreme values
         merged = merged.with_columns([
-            (((pl.col('dropoff_count_2025') - pl.col('dropoff_count')) / 
-              pl.col('dropoff_count') * 100).fill_null(0)).alias('pct_change')
+            pl.when(pl.col('dropoff_count') > 10)  # only calculate if base is meaningful
+            .then(
+                ((pl.col('dropoff_count_2025') - pl.col('dropoff_count')) / 
+                 pl.col('dropoff_count') * 100)
+                .clip(-100, 500)  # cap at -100% to 500% to avoid extreme outliers
+            )
+            .otherwise(
+                pl.when(pl.col('dropoff_count_2025') > 10)
+                .then(pl.lit(100.0))  # new zone with meaningful data
+                .otherwise(pl.lit(0.0))  # both too small, no meaningful change
+            )
+            .alias('pct_change')
         ])
         
         # prepare for mapping

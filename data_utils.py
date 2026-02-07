@@ -43,10 +43,16 @@ CONGESTION_ZONE_IDS = [
 ]
 
 
-def scrape_tlc_data(year=2025, taxi_types=['yellow', 'green']):
+def scrape_tlc_data(year=2025, taxi_types=['yellow', 'green'], specific_months=None):
     """
     Scrape TLC website and download parquet files for specified year
     Handles missing December data with imputation
+    
+    Args:
+        year: Year to download (default 2025)
+        taxi_types: List of taxi types ['yellow', 'green']
+        specific_months: List of months to download (e.g., ['01', '02', '03']). 
+                        If None, downloads all 12 months.
     """
     logger.info(f"Starting TLC data scrape for year {year}")
     
@@ -66,7 +72,12 @@ def scrape_tlc_data(year=2025, taxi_types=['yellow', 'green']):
     for taxi_type in taxi_types:
         logger.info(f"Processing {taxi_type} taxi data...")
         
-        months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+        # use specific months if provided, otherwise all 12 months
+        if specific_months is None:
+            months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+        else:
+            months = specific_months
+            logger.info(f"  Downloading only specified months: {months}")
         
         for month in months:
             file_name = f"{taxi_type}_tripdata_{year}-{month}.parquet"
@@ -195,19 +206,27 @@ def impute_december_2025(taxi_type='yellow'):
         logger.warning(f"  Dec 2023 exists: {dec_2023_path.exists()}, Dec 2024 exists: {dec_2024_path.exists()}")
         return None
     
-    # read in chunks to avoid memory issues
+    # read and sample data
     logger.info("  Reading Dec 2023 data...")
-    df_2023 = pl.scan_parquet(str(dec_2023_path))
+    df_2023 = pl.scan_parquet(str(dec_2023_path)).collect()
     
     logger.info("  Reading Dec 2024 data...")
-    df_2024 = pl.scan_parquet(str(dec_2024_path))
+    df_2024 = pl.scan_parquet(str(dec_2024_path)).collect()
     
     # sample 30% from 2023, 70% from 2024
     # adjust dates to 2025
     logger.info("  Sampling and adjusting dates...")
     
-    df_2023_sample = df_2023.sample(fraction=0.3, seed=42).collect()
-    df_2024_sample = df_2024.sample(fraction=0.7, seed=42).collect()
+    # get row counts for sampling
+    total_2023 = len(df_2023)
+    total_2024 = len(df_2024)
+    
+    # sample rows
+    sample_size_2023 = int(total_2023 * 0.3)
+    sample_size_2024 = int(total_2024 * 0.7)
+    
+    df_2023_sample = df_2023.sample(n=sample_size_2023, seed=42) if sample_size_2023 > 0 else df_2023.head(0)
+    df_2024_sample = df_2024.sample(n=sample_size_2024, seed=42) if sample_size_2024 > 0 else df_2024.head(0)
     
     # update date columns to 2025
     # add days: 2 years = ~730 days, 1 year = ~365 days
@@ -432,14 +451,23 @@ def process_year_data(year=2025, taxi_types=['yellow', 'green'], chunk_size=1000
             logger.info("  Imputing December 2025...")
             impute_december_2025(taxi_type)
         
-        # process each month
+        # process each month - check which months are available
+        available_months = []
         for month in range(1, 13):
             month_str = f"{month:02d}"
             file_path = RAW_DIR / taxi_type / f"{taxi_type}_tripdata_{year}-{month_str}.parquet"
-            
-            if not file_path.exists():
-                logger.warning(f"  File not found: {file_path}")
-                continue
+            if file_path.exists():
+                available_months.append(month_str)
+        
+        if not available_months:
+            logger.warning(f"  No data files found for {taxi_type} {year}")
+            continue
+        
+        logger.info(f"  Found {len(available_months)} months of data: {available_months}")
+        
+        # process available months
+        for month_str in available_months:
+            file_path = RAW_DIR / taxi_type / f"{taxi_type}_tripdata_{year}-{month_str}.parquet"
             
             logger.info(f"  Processing {file_path.name}...")
             
@@ -482,7 +510,37 @@ def process_year_data(year=2025, taxi_types=['yellow', 'green'], chunk_size=1000
     # combine all data
     if all_data:
         logger.info("Combining all processed data...")
-        final_df = pl.concat(all_data)
+        
+        # normalize datetime columns to same precision before concatenation
+        # find all datetime columns and convert to same type
+        if len(all_data) > 0:
+            # get datetime columns from first dataframe
+            datetime_cols = []
+            for col in all_data[0].columns:
+                dtype = all_data[0][col].dtype
+                if isinstance(dtype, pl.Datetime) or str(dtype).startswith('Datetime'):
+                    datetime_cols.append(col)
+            
+            # normalize all dataframes to same datetime precision
+            normalized_data = []
+            for df in all_data:
+                df_normalized = df
+                for col in datetime_cols:
+                    if col in df_normalized.columns:
+                        # convert to nanoseconds (most precise) to avoid schema conflicts
+                        try:
+                            current_dtype = df_normalized[col].dtype
+                            if str(current_dtype) != "Datetime(time_unit='ns', time_zone=None)":
+                                df_normalized = df_normalized.with_columns(
+                                    pl.col(col).cast(pl.Datetime('ns')).alias(col)
+                                )
+                        except Exception as e:
+                            logger.warning(f"  Could not normalize {col}: {e}")
+                normalized_data.append(df_normalized)
+            
+            final_df = pl.concat(normalized_data)
+        else:
+            final_df = all_data[0]
         
         # save processed data
         output_path = PROC_DIR / f"processed_{year}.parquet"

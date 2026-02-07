@@ -174,12 +174,16 @@ Examples:
     
     args = parser.parse_args()
     
-    # if --all, set all flags
+    # if --all, set all flags and process both 2024 and 2025
     if args.all:
         args.scrape = True
         args.process = True
         args.analyze = True
         args.report = True
+        # process both years when using --all
+        process_both_years = True
+    else:
+        process_both_years = False
     
     # if no flags set, show help
     if not any([args.scrape, args.process, args.process, args.analyze, args.report]):
@@ -194,6 +198,7 @@ Examples:
     success = True
     
     # Step 1: Scraping
+    # Note: --all only scrapes 2025 (main year). For 2024, use download_required_data.py
     if args.scrape and not args.skip_scrape:
         success = run_scraping(args.year, args.taxi_types)
         if not success:
@@ -203,7 +208,16 @@ Examples:
     if args.process:
         if not success and not args.skip_scrape:
             logger.warning("Previous step had issues, but continuing with processing...")
-        success = run_processing(args.year, args.taxi_types)
+        
+        # if --all, process both 2024 and 2025
+        if process_both_years:
+            logger.info("Processing both 2024 and 2025 data...")
+            success_2024 = run_processing(2024, args.taxi_types)
+            success_2025 = run_processing(2025, args.taxi_types)
+            success = success_2024 and success_2025
+        else:
+            success = run_processing(args.year, args.taxi_types)
+        
         if not success:
             logger.error("Processing failed, cannot continue")
             return
