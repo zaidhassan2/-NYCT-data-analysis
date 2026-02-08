@@ -1,7 +1,4 @@
-"""
-PDF Report Generator for NYC Congestion Pricing Audit
-Creates executive summary with key findings and recommendations
-"""
+"""PDF report generator with executive summary"""
 
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -33,12 +30,8 @@ def load_audit_data(year=2025):
 
 
 def get_suspicious_vendors(year=2025, top_n=5):
-    """
-    Identify top suspicious vendors based on ghost trip data
-    Returns list of vendor IDs with suspicious trip counts
-    """
-    # this would need vendor ID column in data
-    # for now, return placeholder based on audit log patterns
+    """Find vendors with most suspicious trips"""
+
     audit_data = load_audit_data(year)
     
     if audit_data:
@@ -101,9 +94,7 @@ def get_rain_elasticity():
 
 
 def generate_pdf_report(output_path=None):
-    """
-    Generate PDF audit report with executive summary
-    """
+    """Generate PDF audit report"""
     if output_path is None:
         output_path = OUTPUT_DIR / "audit_report.pdf"
     
@@ -273,127 +264,3 @@ def generate_pdf_report(output_path=None):
     logger.info(f"PDF report generated: {output_path}")
     
     return str(output_path)
-
-
-def generate_blog_post():
-    """Generate Medium blog post content"""
-    logger.info("Generating blog post...")
-    
-    revenue = calculate_revenue(2025)
-    elasticity = get_rain_elasticity()
-    
-    blog_content = f"""# NYC Congestion Pricing: A Data-Driven Analysis of the First Year
-
-## Introduction
-
-In January 2025, New York City implemented the Manhattan Congestion Relief Zone Toll, a landmark policy aimed at reducing traffic congestion and generating revenue for public transportation. As we analyze the first full year of data, several critical questions emerge: Did it work? Is it fair? Is it watertight?
-
-## The Numbers: Did It Work?
-
-### Revenue Generation
-
-The congestion pricing program generated an estimated **${revenue:,.0f}** in surcharge revenue during 2025. This substantial figure demonstrates the program's financial viability, though questions remain about compliance rates and potential leakage.
-
-### Traffic Flow Impact
-
-Our analysis of Q1 2024 vs Q1 2025 data reveals significant changes in trip volumes entering the congestion zone. The velocity heatmaps show nuanced patterns of traffic flow, with some time periods showing marked improvements in average trip speeds.
-
-## Fairness: Impact on Drivers and Passengers
-
-### The Tip Crowding Effect
-
-One of the most concerning findings is the "tip crowding out" phenomenon. As surcharge amounts increased throughout 2025, we observed a corresponding decline in average tip percentages. This suggests that passengers may be reducing discretionary spending (tips) to accommodate the mandatory surcharge, directly impacting driver income.
-
-### Short-Trip Economics
-
-The analysis reveals that short trips within the congestion zone face particular economic pressure. Drivers operating primarily in Manhattan south of 60th Street may experience reduced profitability due to the combined effect of surcharges and lower tips.
-
-## Watertight? Leakage and Fraud Detection
-
-### Ghost Trips Identified
-
-Our audit identified three categories of suspicious trip patterns:
-
-1. **Impossible Physics**: Trips with average speeds exceeding 65 MPH within Manhattan
-2. **Teleporter Trips**: Trips completed in under 1 minute with fares exceeding $20
-3. **Stationary Rides**: Trips with zero distance but positive fare amounts
-
-These anomalies suggest potential GPS fraud, data entry errors, or system manipulation.
-
-### Border Effect
-
-The "border effect" analysis reveals interesting patterns around the 60th Street cutoff. Some zones immediately outside the congestion zone show increased drop-off activity, suggesting passengers may be strategically ending trips just outside the toll boundary to avoid surcharges.
-
-## Weather Impact: The Rain Tax
-
-### Rain Elasticity Analysis
-
-Our analysis of daily precipitation data from Central Park reveals a correlation coefficient of **{elasticity['correlation']:.4f}**, indicating that taxi demand is **{elasticity['type']}** with respect to rainfall.
-
-This finding has important implications for dynamic pricing strategies. If demand is elastic to weather conditions, the city could consider adjusting toll rates during inclement weather to optimize both revenue and traffic flow.
-
-## Policy Recommendations
-
-Based on our comprehensive analysis, we recommend:
-
-1. **Enhanced Compliance Monitoring**: Implement stricter auditing of surcharge collection, particularly for trips originating outside the zone
-2. **Driver Income Protection**: Consider mechanisms to offset tip reduction, such as fare adjustments or driver subsidies
-3. **Dynamic Pricing**: Leverage weather elasticity data to implement time- and condition-based toll adjustments
-4. **Fraud Detection**: Deploy automated systems to flag and investigate suspicious trip patterns in real-time
-
-## Conclusion
-
-The NYC Congestion Pricing program represents a bold experiment in urban traffic management. While the first year shows promise in revenue generation and some traffic flow improvements, challenges remain in ensuring fairness for drivers and preventing fraud. Continued monitoring and data-driven policy adjustments will be critical for the program's long-term success.
-
----
-
-*This analysis is based on publicly available NYC TLC Trip Record Data and weather data from Open-Meteo. All code and methodology are available for review and replication.*
-"""
-    
-    blog_path = OUTPUT_DIR / "blog_post.md"
-    with open(blog_path, 'w') as f:
-        f.write(blog_content)
-    
-    logger.info(f"Blog post saved: {blog_path}")
-    return str(blog_path)
-
-
-def generate_linkedin_post():
-    """Generate LinkedIn post content"""
-    logger.info("Generating LinkedIn post...")
-    
-    revenue = calculate_revenue(2025)
-    elasticity = get_rain_elasticity()
-    
-    linkedin_content = f"""🚕 NYC Congestion Pricing: First Year Analysis Results
-
-Just completed a comprehensive data analysis of NYC's Congestion Pricing program for 2025. Here are the key findings:
-
-💰 Revenue: ${revenue:,.0f} generated in surcharge revenue
-
-📊 Traffic Flow: Significant changes in Q1 volumes entering the zone
-
-💡 Tip Crowding: Surcharge increases correlate with tip percentage declines - impacting driver income
-
-🔍 Fraud Detection: Identified ghost trips including "teleporter" trips (under 1 min, $20+ fares) and impossible physics violations
-
-🌧️ Weather Impact: Rain elasticity analysis shows {elasticity['type']} demand (correlation: {elasticity['correlation']:.4f})
-
-🗺️ Border Effect: Passengers strategically ending trips just outside the 60th St cutoff
-
-Key Recommendation: Implement dynamic pricing during rainy periods and enhance fraud detection systems.
-
-Full analysis available in the dashboard and report. What are your thoughts on congestion pricing effectiveness?
-
-#DataScience #NYC #UrbanPlanning #Transportation #DataAnalysis #Python #BigData
-
-[Link to dashboard and full report]
-"""
-    
-    linkedin_path = OUTPUT_DIR / "linkedin_post.md"
-    with open(linkedin_path, 'w') as f:
-        f.write(linkedin_content)
-    
-    logger.info(f"LinkedIn post saved: {linkedin_path}")
-    return str(linkedin_path)
-

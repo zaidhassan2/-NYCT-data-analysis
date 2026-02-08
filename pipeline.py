@@ -114,16 +114,6 @@ def run_report_generation():
         pdf_path = report_gen.generate_pdf_report()
         logger.info(f"PDF report: {pdf_path}")
         
-        # blog post
-        logger.info("Generating blog post...")
-        blog_path = report_gen.generate_blog_post()
-        logger.info(f"Blog post: {blog_path}")
-        
-        # LinkedIn post
-        logger.info("Generating LinkedIn post...")
-        linkedin_path = report_gen.generate_linkedin_post()
-        logger.info(f"LinkedIn post: {linkedin_path}")
-        
         return True
     except Exception as e:
         logger.error(f"Report generation failed: {e}")
@@ -197,8 +187,7 @@ Examples:
     
     success = True
     
-    # Step 1: Scraping
-    # Note: --all only scrapes 2025 (main year). For 2024, use download_required_data.py
+    # Scraping
     if args.scrape and not args.skip_scrape:
         success = run_scraping(args.year, args.taxi_types)
         if not success:

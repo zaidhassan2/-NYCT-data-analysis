@@ -1,7 +1,4 @@
-"""
-Streamlit Dashboard for NYC Congestion Pricing Analysis
-Enhanced with modern color scheme, additional visualizations, and professional formatting
-"""
+"""NYC Congestion Pricing Dashboard"""
 
 import streamlit as st
 import pandas as pd
@@ -29,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Modern CSS with vibrant color scheme
+# Custom styling
 st.markdown("""
     <style>
     /* Import modern font */
@@ -664,9 +661,7 @@ with tab3:
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
-    
-    # Tip analysis section - REMOVED (data quality issues)
-    # All tip-related visualizations removed due to missing tip_amount data
+
 
 # Tab 4: The Weather
 with tab4:

@@ -1,6 +1,4 @@
-"""
-Analysis and visualization functions for NYC Congestion Pricing
-"""
+"""Analysis and visualization functions"""
 
 import polars as pl
 import pandas as pd
@@ -21,15 +19,10 @@ plt.rcParams['figure.figsize'] = (12, 6)
 
 
 def calc_border_effect(year_2024=2024, year_2025=2025):
-    """
-    Calculate % change in drop-offs for zones bordering 60th St
-    Compares full year 2024 vs full year 2025
-    Returns data ready for choropleth mapping
-    """
+    """Calculate border zone drop-off changes (2024 vs 2025)"""
     logger.info("Calculating border effect...")
     
-    # approximate border zones (zones near 60th St cutoff)
-    # this is simplified - would need actual zone boundaries for precise mapping
+    # Border zones near 60th St
     border_zones = [68, 74, 75, 79, 87, 88, 90, 100, 107, 113, 114, 116, 120, 125]
     
     results = {}
@@ -96,11 +89,7 @@ def calc_border_effect(year_2024=2024, year_2025=2025):
 
 
 def create_velocity_heatmap(year=2024, quarter=1):
-    """
-    Create heatmap of average trip speed inside congestion zone
-    Axes: Hour of Day (0-23) x Day of Week (Mon-Sun)
-    Returns aggregated data ready for plotting
-    """
+    """Create velocity heatmap by hour and day of week"""
     logger.info(f"Creating velocity heatmap for Q{quarter} {year}...")
     
     data_path = PROC_DIR / f"processed_{year}.parquet"
@@ -163,10 +152,7 @@ def create_velocity_heatmap(year=2024, quarter=1):
 
 
 def plot_velocity_heatmaps():
-    """
-    Create side-by-side velocity heatmaps for Q1 2024 vs Q1 2025
-    Returns figure object
-    """
+    """Compare Q1 2024 vs Q1 2025 velocity heatmaps"""
     logger.info("Creating velocity heatmap comparison...")
     
     hm_2024 = create_velocity_heatmap(2024, 1)
@@ -202,10 +188,7 @@ def plot_velocity_heatmaps():
 
 
 def analyze_tip_crowding(year=2025):
-    """
-    Analyze tip percentage vs surcharge amount monthly
-    Returns data for dual-axis chart
-    """
+    """Analyze monthly tip vs surcharge relationship"""
     logger.info("Analyzing tip crowding effect...")
     
     data_path = PROC_DIR / f"processed_{year}.parquet"
@@ -252,10 +235,7 @@ def analyze_tip_crowding(year=2025):
 
 
 def plot_tip_crowding(year=2025):
-    """
-    Create dual-axis chart: bars for surcharge, line for tip percentage
-    Returns figure object
-    """
+    """Plot surcharge vs tip percentage over time"""
     logger.info("Plotting tip crowding analysis...")
     
     data = analyze_tip_crowding(year)
@@ -291,10 +271,7 @@ def plot_tip_crowding(year=2025):
 
 
 def plot_rain_elasticity(year=2025):
-    """
-    Plot daily trip count vs precipitation for wettest month
-    Returns figure object
-    """
+    """Plot rain elasticity for wettest month"""
     logger.info("Plotting rain elasticity...")
     
     from data_utils import calculate_rain_elasticity
@@ -342,10 +319,7 @@ def plot_rain_elasticity(year=2025):
 
 
 def create_border_effect_map(year_2024=2024, year_2025=2025):
-    """
-    Create interactive Folium map showing border effect
-    Returns Folium map object
-    """
+    """Create interactive map of border effects"""
     logger.info("Creating border effect map...")
     
     try:

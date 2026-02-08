@@ -1,7 +1,4 @@
-"""
-Data utilities for NYC Congestion Pricing analysis
-Handles scraping, ETL, geo mapping, leakage audit, traffic analysis, and weather
-"""
+"""Data utilities for scraping, processing, and analysis"""
 
 import os
 import time
@@ -32,8 +29,7 @@ AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 # TLC base URL
 TLC_BASE = "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page"
 
-# congestion zone location IDs (Manhattan south of 60th St)
-# these are approximate - would need actual shapefile for precise mapping
+# Congestion zone location IDs
 CONGESTION_ZONE_IDS = [
     4, 12, 13, 24, 41, 42, 43, 45, 48, 50, 68, 74, 75, 79, 87, 88, 90, 100,
     107, 113, 114, 116, 120, 125, 127, 128, 137, 140, 141, 142, 143, 144, 148,
@@ -44,22 +40,10 @@ CONGESTION_ZONE_IDS = [
 
 
 def scrape_tlc_data(year=2025, taxi_types=['yellow', 'green'], specific_months=None):
-    """
-    Scrape TLC website and download parquet files for specified year
-    Handles missing December data with imputation
-    
-    Args:
-        year: Year to download (default 2025)
-        taxi_types: List of taxi types ['yellow', 'green']
-        specific_months: List of months to download (e.g., ['01', '02', '03']). 
-                        If None, downloads all 12 months.
-    """
+    """Download TLC taxi data for specified year and months"""
     logger.info(f"Starting TLC data scrape for year {year}")
     
-    # correct base URL from TLC website
     base_url = "https://d37ci6vzurychx.cloudfront.net/trip-data/"
-    
-    # headers to avoid 403 errors
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': '*/*',
@@ -148,10 +132,7 @@ def scrape_tlc_data(year=2025, taxi_types=['yellow', 'green'], specific_months=N
 
 
 def impute_december_2025(taxi_type='yellow'):
-    """
-    Create imputed December 2025 data using weighted average
-    Dec 2023 (30%) + Dec 2024 (70%)
-    """
+    """Impute Dec 2025 from Dec 2023 (30%) + Dec 2024 (70%)"""
     logger.info(f"Imputing December 2025 for {taxi_type} taxis")
     
     dec_2023_path = RAW_DIR / taxi_type / f"{taxi_type}_tripdata_2023-12.parquet"
@@ -256,11 +237,7 @@ def impute_december_2025(taxi_type='yellow'):
 
 
 def unify_schema(df):
-    """
-    Unify schema across different taxi types and years
-    Returns standardized columns: pickup_time, dropoff_time, pickup_loc, dropoff_loc, 
-    trip_distance, fare, total_amount, congestion_surcharge
-    """
+    """Standardize column names across taxi types and years"""
     # map common column name variations - only map if target doesn't already exist
     col_mapping = {}
     target_cols = set()  # track which target columns we've already mapped
@@ -377,10 +354,7 @@ def unify_schema(df):
 
 
 def filter_ghost_trips(df, audit_log_path=None):
-    """
-    Filter out suspicious/ghost trips
-    Returns filtered dataframe and audit log
-    """
+    """Filter ghost trips and return audit log"""
     logger.info("Filtering ghost trips...")
     
     audit_log = {
@@ -428,10 +402,7 @@ def filter_ghost_trips(df, audit_log_path=None):
 
 
 def process_year_data(year=2025, taxi_types=['yellow', 'green'], chunk_size=100000):
-    """
-    Process all data for a year using Polars in chunks
-    Returns path to processed data
-    """
+    """Process year data in chunks"""
     logger.info(f"Processing data for year {year}")
     
     all_data = []
@@ -558,10 +529,7 @@ def process_year_data(year=2025, taxi_types=['yellow', 'green'], chunk_size=1000
 
 
 def get_congestion_zone_locations():
-    """
-    Return list of LocationIDs in congestion zone
-    For now using hardcoded list, ideally would load from shapefile
-    """
+    """Return congestion zone location IDs"""
     return CONGESTION_ZONE_IDS
 
 
@@ -571,10 +539,7 @@ def is_in_congestion_zone(location_id):
 
 
 def audit_leakage(year=2025, toll_start_date='2025-01-05'):
-    """
-    Calculate surcharge compliance rate for trips outside->inside zone after toll start
-    Returns compliance stats and top 3 pickup locations with missing surcharges
-    """
+    """Audit surcharge compliance for trips entering zone"""
     logger.info("Auditing surcharge leakage...")
     
     # load processed data
@@ -637,10 +602,7 @@ def audit_leakage(year=2025, toll_start_date='2025-01-05'):
 
 
 def compare_q1_volumes():
-    """
-    Compare Q1 2024 vs Q1 2025 trip volumes entering congestion zone
-    Returns comparison stats
-    """
+    """Compare Q1 trip volumes (2024 vs 2025)"""
     logger.info("Comparing Q1 volumes...")
     
     results = {}
@@ -686,14 +648,10 @@ def compare_q1_volumes():
 
 
 def get_weather_data(year=2025, location='Central Park, NY'):
-    """
-    Fetch daily precipitation data from Open-Meteo API
-    Returns dataframe with date and precipitation
-    """
+    """Fetch daily weather data from Open-Meteo"""
     logger.info(f"Fetching weather data for {year}...")
     
-    # Open-Meteo API (free, no key needed)
-    # Central Park coordinates: ~40.7829, -73.9654
+    # Central Park coordinates
     url = "https://archive-api.open-meteo.com/v1/archive"
     
     params = {
@@ -729,10 +687,7 @@ def get_weather_data(year=2025, location='Central Park, NY'):
 
 
 def calculate_rain_elasticity(year=2025):
-    """
-    Calculate rain elasticity of demand
-    Joins weather with daily trip counts and calculates correlation
-    """
+    """Calculate rain elasticity from weather and trip data"""
     logger.info("Calculating rain elasticity...")
     
     # get weather data

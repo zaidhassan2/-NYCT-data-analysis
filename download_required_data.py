@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-Download only the required data according to assignment:
-- Dec 2023 (for December 2025 imputation)
-- Jan-Mar 2024 (for Q1 2024 vs Q1 2025 comparison)
-- Dec 2024 (for December 2025 imputation and border effect)
-- All of 2025 (for main analysis)
-"""
+"""Download required data for analysis"""
 
 import data_utils
 import logging
